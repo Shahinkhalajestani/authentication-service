@@ -1,4 +1,4 @@
-package com.shahintraining.authenticationservice.domain.service;
+package com.shahintraining.authenticationservice.service;
 
 import com.shahintraining.authenticationservice.domain.AppUser;
 import com.shahintraining.authenticationservice.domain.Role;

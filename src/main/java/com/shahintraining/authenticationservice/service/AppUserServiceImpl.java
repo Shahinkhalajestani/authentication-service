@@ -1,4 +1,4 @@
-package com.shahintraining.authenticationservice.domain.service;
+package com.shahintraining.authenticationservice.service;
 
 import com.shahintraining.authenticationservice.domain.AppUser;
 import com.shahintraining.authenticationservice.domain.Role;
@@ -6,7 +6,6 @@ import com.shahintraining.authenticationservice.repo.AppUserRepo;
 import com.shahintraining.authenticationservice.repo.RoleRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -29,19 +28,19 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     public AppUser saveUser(AppUser user) {
-        log.info("saving new user to database");
+        log.info("saving new user {} to database",user.getUsername());
         return userRepo.save(user);
     }
 
     @Override
     public Role saveRole(Role role) {
-        log.info("saving new role to database");
+        log.info("saving new role {} to database",role.getName());
         return roleRepo.save(role);
     }
 
     @Override
     public void addRoleToUser(String username, String roleName) {
-        log.info("adding a role to a user");
+        log.info("adding a role {} to a user {}",roleName,username);
         Optional<AppUser> appUserByUsername = userRepo.findAppUserByUsername(username);
         if (appUserByUsername.isPresent()) {
             AppUser user = appUserByUsername.get();
@@ -59,7 +58,7 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     public AppUser getUser(String username) {
-        log.info("fetching a user from database");
+        log.info("fetching a user {} from database",username);
         Optional<AppUser> userOptional = userRepo.findAppUserByUsername(username);
         if (userOptional.isPresent()) {
             return userOptional.get();
