@@ -21,7 +21,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 /**
  * @author sh.khalajestanii
@@ -67,15 +71,21 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
                 .withSubject(user.getUsername())
                 .withIssuedAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
                 .withIssuer(request.getRequestURI())
-                .withClaim("roles", user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
+                .withClaim("roles", user.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList()))
                 .sign(algorithm);
         String refresh_token = JWT.create()
                 .withSubject(user.getUsername())
                 .withIssuedAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
                 .withIssuer(request.getRequestURI())
                 .sign(algorithm);
-        response.setHeader("access_token", access_token);
-        response.setHeader("refersh_token", refresh_token);
+//        response.setHeader("access_token", access_token);
+//        response.setHeader("refresh_token", refresh_token);
+        Map<String,String> tokens = new LinkedHashMap<>();
+        tokens.put("access_token", access_token);
+        tokens.put("refresh_token", refresh_token);
+        response.setContentType(APPLICATION_JSON_VALUE);
+        new ObjectMapper().writeValue(response.getOutputStream(),tokens);
     }
 
 }
