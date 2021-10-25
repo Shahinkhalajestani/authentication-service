@@ -2,7 +2,9 @@ package com.shahintraining.authenticationservice.filter;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shahintraining.authenticationservice.domain.AppUser;
+import com.shahintraining.authenticationservice.domain.UsernamePasswordRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -40,10 +42,17 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request,
                                                 HttpServletResponse response) throws AuthenticationException {
-        String username = request.getParameter("username");
-        String password = request.getParameter("password");
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(username, password);
-        return authenticationManager.authenticate(authenticationToken);
+        try {
+            UsernamePasswordRequest usernamePasswordRequest =
+                    new ObjectMapper().readValue(request.getInputStream(), UsernamePasswordRequest.class);
+            log.info("Username : {}", usernamePasswordRequest.getUsername());
+            log.info("Password : {}", usernamePasswordRequest.getPassword());
+            UsernamePasswordAuthenticationToken authenticationToken =
+                    new UsernamePasswordAuthenticationToken(usernamePasswordRequest.getUsername(), usernamePasswordRequest.getPassword());
+            return authenticationManager.authenticate(authenticationToken);
+        } catch (Exception e) {
+           throw new RuntimeException(e);
+        }
     }
 
 
@@ -52,7 +61,7 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
                                             HttpServletResponse response,
                                             FilterChain chain,
                                             Authentication authResult) throws IOException, ServletException {
-        User user= (User) authResult.getPrincipal();
+        User user = (User) authResult.getPrincipal();
         Algorithm algorithm = Algorithm.HMAC256("long ass secret key".getBytes());
         String access_token = JWT.create()
                 .withSubject(user.getUsername())
@@ -65,8 +74,8 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
                 .withIssuedAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
                 .withIssuer(request.getRequestURI())
                 .sign(algorithm);
-        response.setHeader("access_token",access_token);
-        response.setHeader("refersh_token",refresh_token);
+        response.setHeader("access_token", access_token);
+        response.setHeader("refersh_token", refresh_token);
     }
 
 }

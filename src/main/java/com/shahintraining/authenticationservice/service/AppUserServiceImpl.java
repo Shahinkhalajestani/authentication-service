@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -29,10 +30,12 @@ public class AppUserServiceImpl implements AppUserService {
 
     private final AppUserRepo userRepo;
     private final RoleRepo roleRepo;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public AppUser saveUser(AppUser user) {
         log.info("saving new user {} to database", user.getUsername());
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepo.save(user);
     }
 
@@ -81,15 +84,15 @@ public class AppUserServiceImpl implements AppUserService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Optional<AppUser> appUserOptional = userRepo.findAppUserByUsername(username);
         AppUser user = null;
-        if (!appUserOptional.isPresent()){
-            log.info("The User is not found in the database : {}",username);
+        if (!appUserOptional.isPresent()) {
+            log.info("The User is not found in the database : {}", username);
             throw new UsernameNotFoundException("User not found in the database");
-        }else {
-             user = appUserOptional.get();
-             log.info("User is found in the database : {} ",username);
+        } else {
+            user = appUserOptional.get();
+            log.info("User is found in the database : {} ", username);
         }
         return new org.springframework.security.core.userdetails.User(user.getUsername(),
-                user.getUsername(),
+                user.getPassword(),
                 user.getRoles().stream().map(role -> new SimpleGrantedAuthority(role.getName())).collect(Collectors.toList()));
     }
 }
