@@ -1,16 +1,25 @@
 package com.shahintraining.authenticationservice.contorller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shahintraining.authenticationservice.domain.AppUser;
 import com.shahintraining.authenticationservice.domain.Role;
 import com.shahintraining.authenticationservice.domain.RoleToUserDto;
 import com.shahintraining.authenticationservice.service.AppUserService;
+import com.shahintraining.authenticationservice.service.JwtTokenService;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author sh.khalajestanii
@@ -23,6 +32,7 @@ import java.util.List;
 public class UserController {
 
     private final AppUserService userService;
+    private final JwtTokenService jwtTokenService;
 
     @GetMapping(value = "/users")
     public ResponseEntity<List<AppUser>> getUsers(){
@@ -46,5 +56,13 @@ public class UserController {
         userService.addRoleToUser(roleToUserDto.getUsername(),roleToUserDto.getRoleName());
         return ResponseEntity.ok().build();
     }
+
+    @SneakyThrows
+    @GetMapping("/refresh-token")
+    public void refreshToken(HttpServletRequest request, HttpServletResponse response){
+        jwtTokenService.refreshToken(request,response);
+    }
+
+
 
 }
