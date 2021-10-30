@@ -2,6 +2,8 @@ package com.shahintraining.authenticationservice.security;
 
 import com.shahintraining.authenticationservice.filter.CustomAuthenticationFilter;
 import com.shahintraining.authenticationservice.filter.CustomAuthorizationFilter;
+import com.shahintraining.authenticationservice.jwt.JwtConfig;
+import com.shahintraining.authenticationservice.jwt.JwtUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,6 +30,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtility jwtUtility;
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -36,7 +39,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        CustomAuthenticationFilter customAuthenticationFilter = new CustomAuthenticationFilter(authenticationManagerBean());
+        CustomAuthenticationFilter customAuthenticationFilter =
+                new CustomAuthenticationFilter(authenticationManagerBean(),jwtUtility);
         customAuthenticationFilter.setFilterProcessesUrl("/api/login"); //the original in the parent class is named login
         http.csrf().disable();
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
@@ -45,7 +49,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests().antMatchers(HttpMethod.POST,"/api/user/save**").hasAnyAuthority("ROLE_ADMIN");
         http.authorizeRequests().anyRequest().authenticated();
         http.addFilter(customAuthenticationFilter);
-        http.addFilterBefore(new CustomAuthorizationFilter() , UsernamePasswordAuthenticationFilter.class); // this is the class we extended
+        http.addFilterBefore(new CustomAuthorizationFilter(jwtUtility) , UsernamePasswordAuthenticationFilter.class); // this is the class we extended
     }
 
     @Override

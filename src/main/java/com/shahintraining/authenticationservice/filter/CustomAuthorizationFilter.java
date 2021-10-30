@@ -5,8 +5,11 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shahintraining.authenticationservice.jwt.JwtConfig;
+import com.shahintraining.authenticationservice.jwt.JwtUtility;
 import lombok.extern.slf4j.Slf4j;
 import netscape.security.Privilege;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -33,6 +36,13 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class CustomAuthorizationFilter extends OncePerRequestFilter {
+
+    private final JwtUtility jwtUtility;
+
+    public CustomAuthorizationFilter(JwtUtility jwtUtility) {
+        this.jwtUtility = jwtUtility;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -40,16 +50,20 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } else {
             String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            if (authorizationHeader != null && jwtUtility.checkAuthorizationHeader(authorizationHeader)) {
                 try {
 
-                    String token = authorizationHeader.substring("Bearer ".length());
-                    JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256("long ass secret key".getBytes())).build();
-                    DecodedJWT decodedJWT = jwtVerifier.verify(token);
-                    String username = decodedJWT.getSubject();
-                    String[] roles = decodedJWT.getClaim("roles").asArray(String.class);
-                    List<SimpleGrantedAuthority> authorities =
-                            Arrays.stream(roles).map(role -> new SimpleGrantedAuthority(role)).collect(Collectors.toList());
+//                    String token = authorizationHeader.substring("Bearer ".length());
+//                    JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256("long ass secret key".getBytes())).build();
+//                    DecodedJWT decodedJWT = jwtVerifier.verify(token);
+//                    String username = decodedJWT.getSubject();
+//                    String[] roles = decodedJWT.getClaim("roles").asArray(String.class);
+//                    List<SimpleGrantedAuthority> authorities =
+//                            Arrays.stream(roles).map(role -> new SimpleGrantedAuthority(role)).collect(Collectors.toList());
+
+                    String username = jwtUtility.getUsernameFromToken(authorizationHeader);
+                    List<SimpleGrantedAuthority> authorities = Arrays.stream(jwtUtility.getRolesFromToken(authorizationHeader))
+                            .map(SimpleGrantedAuthority::new).collect(Collectors.toList());
                     UsernamePasswordAuthenticationToken authenticationToken
                             = new UsernamePasswordAuthenticationToken(username, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);

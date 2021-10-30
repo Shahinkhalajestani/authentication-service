@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shahintraining.authenticationservice.domain.AppUser;
 import com.shahintraining.authenticationservice.domain.UsernamePasswordRequest;
+import com.shahintraining.authenticationservice.jwt.JwtUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -37,10 +38,11 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
 
 
     private final AuthenticationManager authenticationManager;
+    private final JwtUtility jwtUtility;
 
-
-    public CustomAuthenticationFilter(AuthenticationManager authenticationManager) {
+    public CustomAuthenticationFilter(AuthenticationManager authenticationManager, JwtUtility jwtUtility) {
         this.authenticationManager = authenticationManager;
+        this.jwtUtility = jwtUtility;
     }
 
     @Override
@@ -55,7 +57,7 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
                     new UsernamePasswordAuthenticationToken(usernamePasswordRequest.getUsername(), usernamePasswordRequest.getPassword());
             return authenticationManager.authenticate(authenticationToken);
         } catch (Exception e) {
-           throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -66,26 +68,28 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
                                             FilterChain chain,
                                             Authentication authResult) throws IOException, ServletException {
         User user = (User) authResult.getPrincipal();
-        Algorithm algorithm = Algorithm.HMAC256("long ass secret key".getBytes());
-        String access_token = JWT.create()
-                .withSubject(user.getUsername())
-                .withIssuedAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
-                .withIssuer(request.getRequestURI())
-                .withClaim("roles", user.getAuthorities().stream().map(GrantedAuthority::getAuthority)
-                        .collect(Collectors.toList()))
-                .sign(algorithm);
-        String refresh_token = JWT.create()
-                .withSubject(user.getUsername())
-                .withIssuedAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
-                .withIssuer(request.getRequestURI())
-                .sign(algorithm);
+//        Algorithm algorithm = Algorithm.HMAC256("long ass secret key".getBytes());
+//        String access_token = JWT.create()
+//                .withSubject(user.getUsername())
+//                .withIssuedAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
+//                .withIssuer(request.getRequestURI())
+//                .withClaim("roles", user.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+//                        .collect(Collectors.toList()))
+//                .sign(algorithm);
+//        String refresh_token = JWT.create()
+//                .withSubject(user.getUsername())
+//                .withIssuedAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
+//                .withIssuer(request.getRequestURI())
+//                .sign(algorithm);
 //        response.setHeader("access_token", access_token);
 //        response.setHeader("refresh_token", refresh_token);
-        Map<String,String> tokens = new LinkedHashMap<>();
+        String access_token = jwtUtility.generateAccessToken(user, request.getRequestURI());
+        String refresh_token = jwtUtility.generateRefreshToken(user,request.getRequestURI());
+        Map<String, String> tokens = new LinkedHashMap<>();
         tokens.put("access_token", access_token);
         tokens.put("refresh_token", refresh_token);
         response.setContentType(APPLICATION_JSON_VALUE);
-        new ObjectMapper().writeValue(response.getOutputStream(),tokens);
+        new ObjectMapper().writeValue(response.getOutputStream(), tokens);
     }
 
 }
